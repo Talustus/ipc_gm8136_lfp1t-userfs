@@ -25,17 +25,27 @@ sleep 1
 if [ -f /usr/etc/interfaces.custom ];
 then
   echo -e "found Custom interfaces file, reconfiguring network..."
-  #ifdown -a
-  #ifup -a -i /usr/etc/interfaces.custom
   ip link set eth0 down
   ip link set eth0 up
   ip addr add 192.168.178.74/24 brd + dev eth0
-  # ip route add 192.168.178.0/24 dev eth0
   ip route add default via 192.168.178.1 dev eth0
 else
   echo -e "Custom interfaces file not found, skipping network config..."
 fi
 echo " Network Config done ..."
+
+## Check Custom dream-hack settings
+##
+## IPTables Support
+IPT_ENABLE=0
+if [ -f /usr/etc/dream/iptables.enable ];
+then
+  IPT_ENABLE=`cat /usr/etc/dream/iptables.enable`
+fi
+echo -e "** Dream-Hack Settings: "
+echo -e "** - IPTables enabled: $IPT_ENABLE"
+
+## EOF Custom Dream-Hack Settings ##
 
 ## Alloca running?
 grep Alloca /proc/29*/cmdline
@@ -110,6 +120,20 @@ then
   #/var/rtspd -j > /dev/null 2>&1
 else
   echo -e "boooo, no rtspd binary found :("
+fi
+
+if [ "$IPT_ENABLE" == "1" ] && [ -f /usr/sbin/xtables-multi ];
+then
+  echo -e "** Dream-Hack: Enabling IPTables Support"
+  ln -s /usr/sbin/xtables-multi /bin/iptables
+  ln -s /usr/sbin/xtables-multi /bin/iptables-save
+  ln -s /usr/sbin/xtables-multi /bin/iptables-restore
+  ln -s /usr/sbin/xtables-multi /bin/iptables-xml
+  modprobe -v ip_tables
+  modprobe -v ipt_LOG
+  echo -e " "
+  echo -e "Testing if iptables is working ..."
+  iptables -L --line-numbers
 fi
 
 echo -e ""
