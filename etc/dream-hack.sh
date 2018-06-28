@@ -19,10 +19,13 @@ then
   exit 0
 fi
 
+## create lockfile
+touch /tmp/.dreamhack
+
 ## DebugFS - SetUp eth0
 echo -e "Dream-Hack: Custom Network Config"
 sleep 1
-if [ -f /usr/etc/interfaces.custom ];
+if [ -f /usr/etc/dream/interfaces.custom ];
 then
   echo -e "found Custom interfaces file, reconfiguring network..."
   ip link set eth0 down
@@ -38,91 +41,78 @@ echo " Network Config done ..."
 ##
 ## IPTables Support
 IPT_ENABLE=0
-if [ -f /usr/etc/dream/iptables.enable ];
+if [ -f /usr/etc/dream/iptables.enable ] && [ -e /usr/sbin/xtables-multi ];
 then
   IPT_ENABLE=`cat /usr/etc/dream/iptables.enable`
 fi
-echo -e "** Dream-Hack Settings: "
+
+## RTSPD Stream
+RTSPD_ENABLE=0
+if [ -f /usr/etc/dream/rtspd.enable ] && [ -f /usr/sbin/rtspd.xz ];
+then
+  RTSPD_ENABLE=`cat /usr/etc/dream/rtspd.enable`
+fi
+
+echo -e "**************************"
+echo -e "** Dream-Hack Settings: **"
+echo -e "**************************"
 echo -e "** - IPTables enabled: $IPT_ENABLE"
+echo -e "** - RTSPD enabled: $RTSPD_ENABLE"
+echo -e "**************************"
 
 ## EOF Custom Dream-Hack Settings ##
 
-## Alloca running?
-grep Alloca /proc/29*/cmdline
-if [ "$?" == "0" ];
+# Check for watchdog Timer binary location
+if [ -e /mnt/voice/wdt ];
 then
-  echo -e "Dream-Hack: looks like /var/Alloca is running, killing it!"
-  if [ -e /mnt/voice/wdt ];
-  then
-    echo -e "Dream-Hack, using: /mnt/voice/wdt for wotchdog timer"
-    WDT_BIN=/mnt/voice/wdt
-    # /mnt/voice/wdt 120
-  else
-    echo -e "Dream-Hack, using: /mnt/mtd/dream/wdt for wotchdog timer"
-    WDT_BIN=/mnt/mtd/dream/wdt
-    # /mnt/mtd/dream/wdt 120
-  fi
-  # echo $WDT_BIN
-  # $WDT_BIN 120
-  echo -e "Sleep 40 ..."
-  sleep 40
-  echo -e "... sleep done"
-  $WDT_BIN 120
-  # kill -9 293
-  # kill -9 294
-  # kill -9 298
-  killall dvrHelper
-  killall Alloca
-  # echo -e "Sleep 1"
-  # sleep 1
-  /sbin/watchdog -T 120 -t 30 /dev/watchdog &
+  echo -e "Dream-Hack, using: /mnt/voice/wdt for wotchdog timer"
+  WDT_BIN=/mnt/voice/wdt
 else
-  echo -e "Dream-Hack: good, no /var/Alloca running..."
-  #
-  #
+  echo -e "Dream-Hack, using: /mnt/mtd/dream/wdt for wotchdog timer"
+  WDT_BIN=/mnt/mtd/dream/wdt
 fi
+echo "WDT Binary: $WDT_BIN"
+
+$WDT_BIN 120
+echo -e "Sleep 2"
+sleep 2
+
+echo -e "Starting Software Watchdog"
+/sbin/watchdog -T 120 -t 30 /dev/watchdog &
 
 ## Check for /mnt/mtd partition
-## which contains our custom files
 mountpoint /mnt/mtd
 if [ "$?" = "0" ];
 then
-  echo -e "/mnt/mtd is mounted looking for custom Stuff ...!"
+  echo -e "/mnt/mtd is mounted....!"
 else
   echo -e "Sorry /mnt/mtd is no valid mountpoint..."
-  echo -e "Nothing todo, exiting ..."
-  exit 1
 fi
 
-echo -e ""
-echo -e "Searching for custom Binaries on mnt/mtd partition"
-echo -e ""
-## RTSPD BIN
-if [ -f /mnt/mtd/dream/rtspd ];
+## Check for /mnt/voice partition
+mountpoint /mnt/voice
+if [ "$?" = "0" ];
 then
-  echo -e "RTSPD bin found  on /mnt/mtd, nice one.."
-  # Already on /var?
-  if [ -f /var/rtspd ];
-  then
-    echo -e "RTSPD already exists on /var..."
-    echo -e ""
-  else
-    echo -e "Copying RTSPD Binary...."
-    echo -e ""
-    cp /mnt/mtd/dream/rtspd /var/
-  fi
-  echo -e "Starting RTSPD With MJPEG Stream: rtsp://0.0.0.0:554/live/ch00_0"
-  #/var/rtspd -j &
-  echo "DebugFS i dont start rtspd now ..."
-  ## Debug
-  killall watchdog
-  /sbin/watchdog -T 120 -t 30 /dev/watchdog
-  #/var/rtspd -j > /dev/null 2>&1
+  echo -e "/mnt/voice is mounted....!"
 else
-  echo -e "boooo, no rtspd binary found :("
+  echo -e "Sorry /mnt/voice is no valid mountpoint..."
 fi
 
-if [ "$IPT_ENABLE" == "1" ] && [ -f /usr/sbin/xtables-multi ];
+## Check for /mnt/web partition
+mountpoint /mnt/web
+if [ "$?" = "0" ];
+then
+  echo -e "/mnt/web is mounted....!"
+else
+  echo -e "Sorry /mnt/web is no valid mountpoint..."
+fi
+
+##########################################
+## Setup the system based on our config ##
+##########################################
+
+## IPTables
+if [ "$IPT_ENABLE" == "1" ];
 then
   echo -e "** Dream-Hack: Enabling IPTables Support"
   ln -s /usr/sbin/xtables-multi /bin/iptables
@@ -136,10 +126,21 @@ then
   iptables -L --line-numbers
 fi
 
+## RTSPD
+if [ "$RTSPD_ENABLE" == "1" ];
+then
+  echo -e "** Dream-Hack: Enabling RTSPD Stream Support"
+  cd /var
+  cp /usr/sbin/rtspd.xz /var
+  xz -d rtspd.xz
+  echo -e " "
+  echo -e "Starting RTSP Stream"
+  /var/rtspd -j > /dev/null &
+fi
+
+###
 echo -e ""
 echo -e "*** Dream-Hack EndOF ***"
 echo -e ""
-
-touch /tmp/.dreamhack
 
 exit 0
