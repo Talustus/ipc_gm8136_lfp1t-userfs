@@ -1,38 +1,8 @@
 #!/bin/sh
 
-#cp /usr/bin/wifi_rt8188/hostapd /var
-#cp /usr/bin/wifi_rt8188/rtl_hostapd_2G.conf /var
-#cp /usr/bin/wifi_rt8188/udhcpd.conf /var
-
-#cp /usr/etc/wpa_supplicant.c /var
-
-#mkdir -p /var/run/wpa_supplicant
-
-#cp /usr/bin/wifi_rt8188/wpa_supplicant /var/
-
-#/var/wpa_supplicant -Dwext -ira0 -c /var/wpa_supplicant.c &
-
-#/usr/etc/pppd pty /etc/ppp/pppoe-start file /etc/ppp/pppoe-options &
-
-#cp /usr/bin/ntsclientcon_hisiv100 /var
-
-#cp /usr/etc/npc_nts_client_config.ini /var
-
-#cp /usr/etc/npc_nts_client_config.ini /mnt/mtd/npc_nts_client_config.ini
-
-cd /var
-
-cp /usr/sbin/Alloca.xz /var
-
-xz -d /var/Alloca.xz
-
-#if [ -e /mnt/voice/UpgradeMy ]; then
-#	/mnt/voice/UpgradeMy&
-#	echo "UpgradeMy from /mnt/voice/*********************" 
-#else
-#	/gm/bin/UpgradeMy&
-#	echo "UpgradeMy from /gm/bin/*********************" 
-#fi
+# cd /var
+# cp /usr/sbin/Alloca.xz /var
+# xz -d /var/Alloca.xz
 
 echo "start to read upgrade_state"
 
@@ -69,79 +39,66 @@ done
 
 
 free -m
-IPNCAUTO=`cat /etc/PW/IPNCAUTO`
-#IPNCAUTO=`cat /proc/PW/IPNCAUTO`
+IPNCAUTO=`cat /proc/PW/IPNCAUTO`
 
 #for wifi test
-TF=`cat /etc/PW/TF`
-#TF=`cat /proc/PW/TF`
+TF=`cat /proc/PW/TF`
 if [ "$TF" == "4" ]  ; then
 		#for wifi test
-		echo "***************************"	
+		echo "***************************"
 		echo "TF=4 start wifi test"
 		echo "***************************"
 		#mount TF card
-		sh /m_tf.sh	
+		sh /m_tf.sh
 		if [ -e "/mnt/sd0/mp-wifi.sh" ]; then
 			echo "mp-wifi.sh start"
 			mkdir -p /var/mp-test
 			cp -rf /mnt/sd0/* /var/mp-test
 			sh /var/mp-test/mp-wifi.sh start
 			sh /var/mp-test/mp-wifi.sh test
-		fi	
+		fi
 elif [ "$TF" == "5" ]  ; then
 		#for mp test
-		echo "***************************"	
+		echo "***************************"
 		echo "TF=5 start mp test"
 		echo "***************************"
 		#mount TF card
-		sh /m_tf.sh	
+		sh /m_tf.sh
 		if [ -e "/mnt/sd0/mp-test.sh" ]; then
 			echo "mp-test.sh start"
 			mkdir -p /var/mp-test
 			cp -rf /mnt/sd0/* /var/mp-test
 			sh /var/mp-test/mp-test.sh start
 			sh /var/mp-test/mp-test.sh test
-		fi	
+		fi
 elif [ "$var1" == "1" ]  ; then
-		echo "***************************"	
+		echo "***************************"
 		echo "Do not start Alloca, Ready to Update"
-		echo "***************************"	
+		echo "***************************"
 		if [ -e /mnt/voice/UpgradeMy ]; then
 			/mnt/voice/UpgradeMy&
-			echo "UpgradeMy from /mnt/voice/*********************" 
+			echo "UpgradeMy from /mnt/voice/*********************"
 		else
 			/gm/bin/UpgradeMy&
 			echo "UpgradeMy from /gm/bin/*********************"
-		fi	
-		#UpgradeMy		
+		fi
 else
-		echo "***************************"	
-		echo "Try Autostart Alloca"		
-		echo "***************************"	
-		echo "ready to start Alloca"
+	if [ "$IPNCAUTO" == "1" ];
+	then
+		echo "**********************************"
+		echo "** Autostarting IP-Cam Services **"
+		echo "**********************************"
+		echo "ready to start ip-cam-services"
+		#/var/rtspd -j
 		echo "OH: Kernel Debug FS!!! i should not start anything now right?"
-#		dvrHelper /lib/modules /var/Alloca 127.0.0.1 9578 1 &
 		echo "ready to run Dream-hacks Script (DebugFS-Dummy)"
 		sh /usr/etc/dream-hack.sh
-#	if [ "$IPNCAUTO" == "1" ]  ; then
-#		echo "***************************"	
-#		echo "Autostart Alloca"		
-#		echo "***************************"	
-		#echo "ready to start Alloca"
-		#dvrHelper /lib/modules /var/Alloca 127.0.0.1 9578 1
-#		/var/Alloca &
-#	elif [ "$IPNCAUTO" == "0" ]  ; then
-#		echo "***************************"	
-#		echo "Not autostart Alloca"		
-#		echo "***************************"	
-#	else
-#		echo "***************************"	
-#		echo "run user_test.sh"		
-#		echo "***************************"
-#		sh /usr/etc/user_test.sh $IPNCAUTO	
-#	fi
+	else
+		echo "*******************************************"
+		echo "** Autostart of IP-CAM-Services Disabled **"
+		echo "*******************************************"
+		echo "skipping start of ip-cam-services"
+		/mnt/voice/wdt 120
+		/sbin/watchdog -T 120 -t 30 -F /dev/watchdog
+	fi
 fi
-
-#dvrHelper /lib/modules /var/Alloca 127.0.0.1 9578 1
-

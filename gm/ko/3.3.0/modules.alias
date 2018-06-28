@@ -1,0 +1,7 @@
+# Aliases extracted from modules themselves.
+alias ip6t_tcp xt_tcpudp
+alias ip6t_udp xt_tcpudp
+alias ipt_tcp xt_tcpudp
+alias ipt_udp xt_tcpudp
+alias xt_udp xt_tcpudp
+alias xt_tcp xt_tcpudp

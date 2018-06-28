@@ -1,0 +1,6 @@
+kernel/net/netfilter/x_tables.ko
+kernel/net/netfilter/xt_tcpudp.ko
+kernel/net/ipv4/netfilter/ip_tables.ko
+kernel/net/ipv4/netfilter/iptable_filter.ko
+kernel/net/ipv4/netfilter/ipt_LOG.ko
+kernel/net/ipv4/netfilter/ipt_REJECT.ko
